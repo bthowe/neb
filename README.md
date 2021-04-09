@@ -36,10 +36,3 @@ The content presented in this repository is presented as a courtesy to be used o
 content is provided “As Is” and is not represented to be error free. The Kauffman Foundation makes no representation or 
 warranty of any kind with respect to the content and any such representations or warranties are hereby expressly 
 disclaimed.
-
-
-# TODO
-1. requirements.txt file
-    
-    
-    
