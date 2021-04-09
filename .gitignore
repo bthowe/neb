@@ -1,0 +1,16 @@
+.DS_Store
+*.idea
+*.pyc
+*.xls
+*.xlsx
+*.doc
+*.docx
+*.png
+*.sh
+__pycache__
+**/__pycache__
+
+scratch
+.idea
+Dockerfile
+.dockerignore
