@@ -14,3 +14,6 @@ scratch
 .idea
 Dockerfile
 .dockerignore
+docker
+
+notes_to_suppress.txt
