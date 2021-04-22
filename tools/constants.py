@@ -4,7 +4,7 @@ import geonamescache
 
 def filenamer(path):
     ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(ROOT_DIR, path)
+    return os.path.join(ROOT_DIR, '../' + path)
 
 
 states = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DC", "DE", "FL", "GA",

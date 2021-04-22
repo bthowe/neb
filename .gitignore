@@ -9,11 +9,11 @@
 *.sh
 __pycache__
 **/__pycache__
+.idea
+
+#Dockerfile
+#.dockerignore
+#docker
 
 scratch
-.idea
-Dockerfile
-.dockerignore
-docker
-
-notes_to_suppress.txt
+notes_to_suppress.md

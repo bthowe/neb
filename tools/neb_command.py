@@ -1,12 +1,10 @@
 import os
-import sys
 import shutil
 import joblib
-import kauffman
-import numpy as np
 import pandas as pd
 import constants as c
 from scipy.stats.mstats import gmean
+from kauffman.data import bfs, bds, pep
 
 
 pd.set_option('max_columns', 1000)
@@ -23,53 +21,43 @@ def _format_csv(df):
         astype({'fips': 'str', 'time': 'int'})
 
 
-def _fetch_data_bfs(region, fetch_data, aws_filepath):
+def _fetch_data_bfs(region, fetch_data):
     if fetch_data:
         print(f'\tcreating datasets neb/data/temp/bfs_{region}.pkl')
-        df = kauffman.bfs(['BA_BA', 'BF_SBF8Q', 'BF_DUR8Q'], region, annualize=True).\
+        df = bfs(['BA_BA', 'BF_SBF8Q', 'BF_DUR8Q'], region, annualize=True).\
             rename(columns={'BF_DUR8Q': 'avg_speed_annual', 'BF_SBF8Q': 'bf', 'BA_BA': 'ba'})
     else:
         df = pd.read_csv(c.filenamer(f'data/raw_data/bfs_{region}.csv')).\
             pipe(_format_csv)
     joblib.dump(df, c.filenamer(f'data/temp/bfs_{region}.pkl'))
 
-    if aws_filepath:
-        df.to_csv(f'{aws_filepath}/bfs_{region}.csv', index=False)
 
-
-def _fetch_data_bfs_march_shift(region, fetch_data, aws_filepath):
+def _fetch_data_bfs_march_shift(region, fetch_data):
     if fetch_data:
         print(f'\tcreating datasets neb/data/temp/bfs_march_{region}.pkl')
-        df = kauffman.bfs(['BF_SBF8Q'], region, march_shift=True). \
+        df = bfs(['BF_SBF8Q'], region, march_shift=True). \
             rename(columns={'BF_SBF8Q': 'bf_march_shift'})
     else:
         df = pd.read_csv(c.filenamer(f'data/raw_data/bfs_march_{region}.csv')). \
             pipe(_format_csv)
     joblib.dump(df, c.filenamer(f'data/temp/bfs_march_{region}.pkl'))
 
-    if aws_filepath:
-        df.to_csv(f'{aws_filepath}/bfs_march_{region}.csv', index=False)
 
-
-
-def _fetch_data_bds(region, fetch_data, aws_filepath):
+def _fetch_data_bds(region, fetch_data):
     if fetch_data:
         print(f'\tcreating dataset neb/data/temp/bds_{region}.pkl')
-        df = kauffman.bds(['FIRM'], obs_level=region).\
+        df = bds(['FIRM'], obs_level=region).\
             rename(columns={'FIRM': 'firms'})
     else:
         df = pd.read_csv(c.filenamer(f'data/raw_data/bds_{region}.csv')). \
             pipe(_format_csv)
     joblib.dump(df, c.filenamer(f'data/temp/bds_{region}.pkl'))
 
-    if aws_filepath:
-        df.to_csv(f'{aws_filepath}/bds_{region}.csv', index=False)
 
-
-def _fetch_data_pep(region, fetch_data, aws_filepath):
+def _fetch_data_pep(region, fetch_data):
     if fetch_data:
         print(f'\tcreating dataset neb/data/temp/pep_{region}.pkl')
-        df = kauffman.pep(region).\
+        df = pep(region).\
             rename(columns={'POP': 'population'}).\
             astype({'time': 'int', 'population': 'int'})
     else:
@@ -77,20 +65,17 @@ def _fetch_data_pep(region, fetch_data, aws_filepath):
             pipe(_format_csv)
     joblib.dump(df, c.filenamer(f'data/temp/pep_{region}.pkl'))
 
-    if aws_filepath:
-        df.to_csv(f'{aws_filepath}/pep_{region}.csv', index=False)
 
-
-def _raw_data_fetch(fetch_data, aws_filepath):
+def _raw_data_fetch(fetch_data):
     if os.path.isdir(c.filenamer('data/temp')):
         _raw_data_remove(remove_data=True)
     os.mkdir(c.filenamer('data/temp'))
 
     for region in ['us', 'state']:
-        _fetch_data_bfs(region, fetch_data, aws_filepath)
-        _fetch_data_bfs_march_shift(region, fetch_data, aws_filepath)
-        _fetch_data_bds(region, fetch_data, aws_filepath)
-        _fetch_data_pep(region, fetch_data, aws_filepath)
+        _fetch_data_bfs(region, fetch_data)
+        _fetch_data_bfs_march_shift(region, fetch_data)
+        _fetch_data_bds(region, fetch_data)
+        _fetch_data_pep(region, fetch_data)
 
 
 def _raw_data_merge(region):
@@ -199,7 +184,6 @@ def _download_csv_save(df, aws_filepath):
     df.to_csv(c.filenamer('data/neb_download.csv'), index=False)
     if aws_filepath:
         df.to_csv(f'{aws_filepath}/neb_download.csv', index=False)
-
     return df
 
 
@@ -242,10 +226,9 @@ def neb_data_create_all(raw_data_fetch, raw_data_remove, aws_filepath=None):
         Specifies whether to delete TEMP data at the end.
 
     aws_filepath: None or str
-        S3 bucket must have subdirectories 'raw_data' and 'data_outputs' for stashing the raw data that is fetched and
-         final output files. All data is saved in S3 as a csv file.
+        S3 bucket for stashing the final output files. All data is saved in S3 as a csv file.
     """
-    _raw_data_fetch(raw_data_fetch, f'{aws_filepath}/raw_data')
+    _raw_data_fetch(raw_data_fetch)
 
     pd.concat(
         [
@@ -253,15 +236,15 @@ def neb_data_create_all(raw_data_fetch, raw_data_remove, aws_filepath=None):
         ],
         axis=0
     ). \
-        pipe(_download_csv_save, f'{aws_filepath}/data_outputs'). \
-        pipe(_website_csv_save, f'{aws_filepath}/data_outputs')
+        pipe(_download_csv_save, aws_filepath). \
+        pipe(_website_csv_save, aws_filepath)
 
     _raw_data_remove(raw_data_remove)
 
 
 if __name__ == '__main__':
     neb_data_create_all(
-        raw_data_fetch=True,
+        raw_data_fetch=False,
         raw_data_remove=True,
-        aws_filepath=os.getenv('AWS_BUCKET')
+        aws_filepath='s3://emkf.data.research/indicators/neb/data_outputs/'
     )
