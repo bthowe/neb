@@ -246,5 +246,5 @@ if __name__ == '__main__':
     neb_data_create_all(
         raw_data_fetch=False,
         raw_data_remove=True,
-        aws_filepath='s3://emkf.data.research/indicators/neb/data_outputs/'
+        aws_filepath='s3://emkf.data.research/indicators/neb/data_outputs'
     )
