@@ -104,6 +104,7 @@ def _aggregator(df, index_vars):
 
 
 def index(df, region):
+    return df  # todo: just skipping this for now
     reference_year = 2016  # minimum of last year of velocity or actualization
 
     if region == 'state':
@@ -147,7 +148,8 @@ def _indicators_create(df, region):
             newness=lambda x: x['bf_march_shift'] / x['firms'],
         ). \
         pipe(index, region) \
-        [['fips', 'time', 'actualization', 'bf_per_capita', 'velocity', 'newness', 'index']]
+        [['fips', 'time', 'actualization', 'bf_per_capita', 'velocity', 'newness']]  # todo: removing index for now
+        # [['fips', 'time', 'actualization', 'bf_per_capita', 'velocity', 'newness', 'index']]
 
 
 def _fips_formatter(df, region):
@@ -170,9 +172,9 @@ def _final_data_transform(df, region):
         sort_values(['fips', 'year', 'category']). \
         reset_index(drop=True). \
         assign(name=lambda x: x['fips'].map(c.all_fips_name_dict)) \
-        [['fips', 'name', 'type', 'category', 'year', 'actualization', 'bf_per_capita', 'velocity', 'newness', 'index']].\
+        [['fips', 'name', 'type', 'category', 'year', 'actualization', 'bf_per_capita', 'velocity', 'newness']].\
         query('2005 <= year <= 2020')
-
+        # todo: remove 'index' for now
 
 def _region_all_pipeline(region):
     return _raw_data_merge(region).\
@@ -232,12 +234,13 @@ def neb_data_create_all(raw_data_fetch, raw_data_remove, aws_filepath=None):
 
     pd.concat(
         [
-            _region_all_pipeline(region) for region in ['state', 'us']
+            _region_all_pipeline(region) for region in ['us']
+            # _region_all_pipeline(region) for region in ['state', 'us']
         ],
         axis=0
     ). \
-        pipe(_download_csv_save, aws_filepath). \
-        pipe(_website_csv_save, aws_filepath)
+        pipe(_download_csv_save, aws_filepath)  #. \
+        # pipe(_website_csv_save, aws_filepath)
 
     _raw_data_remove(raw_data_remove)
 
@@ -245,6 +248,5 @@ def neb_data_create_all(raw_data_fetch, raw_data_remove, aws_filepath=None):
 if __name__ == '__main__':
     neb_data_create_all(
         raw_data_fetch=False,
-        raw_data_remove=True,
-        aws_filepath='s3://emkf.data.research/indicators/neb/data_outputs'
+        raw_data_remove=True
     )

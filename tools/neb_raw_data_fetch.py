@@ -18,12 +18,13 @@ pd.set_option('chained_assignment',None)
 def raw_data_update():
     joblib.dump(str(pd.to_datetime('today')), c.filenamer('data/raw_data/raw_data_fetch_time.pkl'))
 
-    for region in ['us', 'state']:
-        bfs(['BA_BA', 'BF_SBF8Q', 'BF_DUR8Q'], region, annualize=True). \
+    for region in ['us']:
+    # for region in ['us', 'state']:
+        bfs(['BA_BA', 'BF_SBF8Q', 'BF_DUR8Q'], region, industry='31-33', annualize=True). \
             rename(columns={'BF_DUR8Q': 'avg_speed_annual', 'BF_SBF8Q': 'bf', 'BA_BA': 'ba'}).\
             to_csv(c.filenamer(f'data/raw_data/bfs_{region}.csv'), index=False)
 
-        bfs(['BF_SBF8Q'], region, march_shift=True). \
+        bfs(['BF_SBF8Q'], region, industry='31-33', march_shift=True). \
             rename(columns={'BF_SBF8Q': 'bf_march_shift'}). \
             to_csv(c.filenamer(f'data/raw_data/bfs_march_{region}.csv'), index=False)
 
@@ -32,8 +33,9 @@ def raw_data_update():
             astype({'time': 'int', 'population': 'int'}).\
             to_csv(c.filenamer(f'data/raw_data/pep_{region}.csv'), index=False)
 
-        bds(['FIRM'], obs_level=region). \
+        bds(['FIRM'], strata=['NAICS'], obs_level=region, census_key='1ab6c1ad36246279fa7d5fcaff693f65c5537c08'). \
             rename(columns={'FIRM': 'firms'}).\
+            query('naics == "31-33"').\
             to_csv(c.filenamer(f'data/raw_data/bds_{region}.csv'), index=False)
 
 
@@ -49,7 +51,7 @@ def s3_update():
 
 def main():
     raw_data_update()
-    s3_update()
+    # s3_update()
 
 
 if __name__ == '__main__':
